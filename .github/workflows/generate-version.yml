@@ -1,0 +1,50 @@
+name: "Generate version based on PR label"
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "Generated version"
+        value: ${{ jobs.generate.outputs.version }}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.setver.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Get PR Label
+        id: getlabel
+        run: |
+          LABEL=$(echo '${{ toJSON(github.event.pull_request.labels) }}' | jq -r '.[0].name' | tr '[:upper:]' '[:lower:]')
+          echo "label=${LABEL}" >> $GITHUB_OUTPUT
+
+      - name: Bump version in package.json (no git tag)
+        id: bump
+        run: |
+          VERSION=$(npm version ${{ steps.getlabel.outputs.label }} --no-git-tag-version)
+          echo "New version: $VERSION"
+
+      - name: Save version to output
+        id: setver
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Write version to file
+        run: echo "${{ steps.setver.outputs.version }}" > version.txt
+
+      - name: Save version to GitHub cache
+        uses: actions/cache@v4
+        with:
+          path: version.txt
+          key: generate-version-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.ref }}-${{ github.event.pull_request.base.ref }}

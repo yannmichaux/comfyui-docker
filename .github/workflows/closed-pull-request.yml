@@ -1,0 +1,51 @@
+name: Pull Request Closed - Build & Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check-label:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Require one of [MAJOR, MINOR, PATCH]
+        uses: mheap/github-action-required-labels@v5
+        with:
+          mode: minimum
+          count: 1
+          labels: "MAJOR, MINOR, PATCH"
+
+  generate-version:
+    if: github.event.pull_request.merged == true
+    needs: check-label
+    permissions:
+      contents: read
+    uses: ./.github/workflows/generate-version.yml
+
+  build-docker:
+    if: github.event.pull_request.merged == true
+    needs: generate-version
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      version: ${{ needs.generate-version.outputs.version }}
+    secrets: inherit
+
+  create-release:
+    if: github.event.pull_request.merged == true
+    needs: generate-version
+    permissions:
+      contents: write
+    uses: ./.github/workflows/create-release.yml
+    with:
+      version: ${{ needs.generate-version.outputs.version }}
+    secrets: inherit
