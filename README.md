@@ -1,6 +1,6 @@
 # ComfyUI + ComfyUI Manager — CUDA 13.0 Docker Image
 
-[![GitHub Build](https://img.shields.io/github/actions/workflow/status/yannmichaux/comfyui-docker/build.yml?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-/actions)
+[![GitHub Build](https://img.shields.io/github/actions/workflow/status/yannmichaux/comfyui-docker/build.yml?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-docker/actions)
 [![GitHub Release](https://img.shields.io/github/v/release/yannmichaux/comfyui-docker?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-/releases)
 [![Docker Version](https://img.shields.io/docker/v/yannmichaux/comfyui?sort=semver&style=for-the-badge&logo=docker)](https://hub.docker.com/r/yannmichaux/comfyui/tags)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
