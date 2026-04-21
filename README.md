@@ -96,8 +96,6 @@ http://localhost:8188
 ## 🐳 docker-compose Example
 
 ```yaml
-version: "3.9"
-
 services:
   comfyui:
     image: yannmichaux/comfyui:<version>
