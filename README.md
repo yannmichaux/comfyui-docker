@@ -98,23 +98,18 @@ http://localhost:8188
 ```yaml
 services:
   comfyui:
-    image: yannmichaux/comfyui:<version>
+    image: yannmichaux/comfyui:latest
     container_name: comfyui
     restart: unless-stopped
     ports:
-      - "8188:8188"
+      - 8188:8188
     volumes:
       - /mnt/comfy/input:/app/comfyui/input
       - /mnt/comfy/output:/app/comfyui/output
       - /mnt/comfy/models:/app/comfyui/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: ["gpu"]
+    runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 ```
 
 ## 🧪 Debugging & Tools
