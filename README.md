@@ -1,4 +1,4 @@
-# ComfyUI + ComfyUI Manager — CUDA 13.0 Docker Image
+# ComfyUI + ComfyUI Manager — CUDA 13.2.1 Docker Image
 
 [![GitHub Build](https://img.shields.io/github/actions/workflow/status/yannmichaux/comfyui-docker/build.yml?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-docker/actions)
 [![GitHub Release](https://img.shields.io/github/v/release/yannmichaux/comfyui-docker?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-/releases)
@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/Powered%20by-ComfyUI-blueviolet?style=for-the-badge)](https://github.com/comfyanonymous/ComfyUI)
 
-> A ready-to-run **ComfyUI + ComfyUI Manager** Docker image with **CUDA 13.0**, **Python 3.12**, and **PyTorch CU130**, fully GPU-accelerated and optimized for homelabs, servers, and AI workstations.
+> A ready-to-run **ComfyUI + ComfyUI Manager** Docker image with **CUDA 13.2.1**, **Python 3.12**, and **PyTorch CU130**, fully GPU-accelerated and optimized for homelabs, servers, and AI workstations.
 
 ---
 
@@ -14,7 +14,7 @@
 
 This project provides a production-ready Docker image for running **ComfyUI** with **ComfyUI Manager**:
 
-- 🔧 Base image: `nvidia/cuda:13.0.2-runtime-ubuntu24.04`
+- 🔧 Base image: `nvidia/cuda:13.2.1-runtime-ubuntu24.04`
 - 🐍 Python **3.12** in a dedicated virtual environment
 - 🔥 PyTorch (CU130 wheels) for NVIDIA GPU acceleration
 - 🧩 ComfyUI + ComfyUI Manager preinstalled
