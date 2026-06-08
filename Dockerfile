@@ -7,6 +7,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     TZ=Etc/UTC
 
+# 0. Add PPA for Python 3.13
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update && \
+    rm -rf /var/lib/apt/lists/*
+
 # 1. Base system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
