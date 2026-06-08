@@ -7,13 +7,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     TZ=Etc/UTC
 
-# 0. Add PPA for Python 3.13
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa -y && \
-    apt-get update && \
-    rm -rf /var/lib/apt/lists/*
-
 # 1. Base system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -22,17 +15,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nano \
     ca-certificates \
     build-essential \
-    python3.13 \
-    python3.13-venv \
-    python3.13-dev \
+    python3.12 \
+    python3.12-venv \
+    python3.12-dev \
     python3-pip \
     ffmpeg \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Alias python3.13 -> python / pip
-RUN ln -sf /usr/bin/python3.13 /usr/bin/python && \
-    ln -sf /usr/bin/python3.13 /usr/bin/python3 && \
+# 2. Alias python3.12 -> python / pip
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python && \
+    ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # 3. Application directories
@@ -44,7 +37,7 @@ RUN git clone https://github.com/Comfy-Org/ComfyUI.git comfyui
 WORKDIR /app/comfyui
 
 # 5. Create and activate virtual environment
-RUN python3.13 -m venv /app/venv
+RUN python3.12 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
 # 6. Install PyTorch CU130 (generic example, adjust if the exact version changes)
