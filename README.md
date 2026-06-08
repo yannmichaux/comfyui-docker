@@ -1,7 +1,7 @@
 # ComfyUI + ComfyUI Manager — CUDA 13.2.1 Docker Image
 
-[![GitHub Build](https://img.shields.io/github/actions/workflow/status/yannmichaux/comfyui-docker/build.yml?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-docker/actions)
-[![GitHub Release](https://img.shields.io/github/v/release/yannmichaux/comfyui-docker?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-/releases)
+[![GitHub Build](https://img.shields.io/github/actions/workflow/status/yannmichaux/comfyui-docker/build-docker.yml?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-docker/actions)
+[![GitHub Release](https://img.shields.io/github/v/release/yannmichaux/comfyui-docker?style=for-the-badge&logo=github)](https://github.com/yannmichaux/comfyui-docker/releases)
 [![Docker Version](https://img.shields.io/docker/v/yannmichaux/comfyui?sort=semver&style=for-the-badge&logo=docker)](https://hub.docker.com/r/yannmichaux/comfyui/tags)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/Powered%20by-ComfyUI-blueviolet?style=for-the-badge)](https://github.com/comfyanonymous/ComfyUI)
@@ -14,8 +14,8 @@
 
 This project provides a production-ready Docker image for running **ComfyUI** with **ComfyUI Manager**:
 
-- 🔧 Base image: `nvidia/cuda:13.2.1-runtime-ubuntu24.04`
-- 🐍 Python **3.12** in a dedicated virtual environment
+- 🔧 Base image: `nvidia/cuda:13.3.0-runtime-ubuntu26.04`
+- 🐍 Python **3.13** in a dedicated virtual environment
 - 🔥 PyTorch (CU130 wheels) for NVIDIA GPU acceleration
 - 🧩 ComfyUI + ComfyUI Manager preinstalled
 - 📂 Clean volume structure for `input`, `output`, and `models`
@@ -26,7 +26,7 @@ This project provides a production-ready Docker image for running **ComfyUI** wi
 ## 📦 Docker Hub & Source Code
 
 - **Docker Hub:** [`yannmichaux/comfyui`](https://hub.docker.com/r/yannmichaux/comfyui)
-- **GitHub Repo:** [`yannmichaux/comfyui-`](https://github.com/yannmichaux/comfyui-)
+- **GitHub Repo:** [`yannmichaux/comfyui-`](https://github.com/yannmichaux/comfyui-docker)
 
 ---
 
@@ -35,10 +35,10 @@ This project provides a production-ready Docker image for running **ComfyUI** wi
 The image includes:
 
 - **OS & Runtime**
-  - Ubuntu 24.04
+  - Ubuntu 26.04
   - CUDA 13.0.2 runtime
 - **Language & Libraries**
-  - Python 3.12 (`/usr/bin/python3.12`)
+  - Python 3.13 (`/usr/bin/python3.13`)
   - Virtual environment at `/app/venv`
   - PyTorch + torchvision + torchaudio (CU130 wheels)
 - **Applications**
