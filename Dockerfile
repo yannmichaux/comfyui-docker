@@ -7,14 +7,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     TZ=Etc/UTC
 
-# 0. Add PPA for Python 3.13
+# 1. Add PPA for Python (Maintenu pour la compatibilité des outils système)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
-# 1. Base system dependencies
+# 2. Base system dependencies (Inclus les outils de compilation pour les fixs de nœuds 3D)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     wget \
@@ -28,50 +28,61 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     ffmpeg \
     libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Alias python3.12 -> python / pip
+# 3. Alias python3.12 -> python / pip
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python && \
     ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
-# 3. Application directories
+# 4. Application directories
 WORKDIR /app
 
-# 4. Clone ComfyUI
+# 5. Clone ComfyUI
 RUN git clone https://github.com/Comfy-Org/ComfyUI.git comfyui
 
 WORKDIR /app/comfyui
 
-# 5. Create and activate virtual environment
-RUN python3.12 -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
-
-# 6. Install PyTorch CU130 (generic example, adjust if the exact version changes)
-RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130
-
-# 7. Install ComfyUI dependencies
-RUN pip install -r requirements.txt
-
-# 8. Install ComfyUI-Manager (custom_nodes)
+# 6. Install ComfyUI-Manager
 RUN mkdir -p /app/comfyui/custom_nodes && \
     git clone https://github.com/Comfy-Org/ComfyUI-Manager.git /app/comfyui/custom_nodes/ComfyUI-Manager
 
-# 9. Create directories for volumes
+# 7. Create directories for fallback/structure
 RUN mkdir -p /app/comfyui/input \
     /app/comfyui/output \
     /app/comfyui/models \
-    /app/comfyui/models/lora \
-    /app/comfyui/models/checkpoints \
-    /app/comfyui/models/vae \
-    /app/comfyui/models/controlnet
+    /app/comfyui/user/default
 
-# 10. Useful environment variables
+# 8. Configuring environment variables and exposed port
 ENV COMFYUI_PORT=8188
-
-# 11. Expose the web port
 EXPOSE 8188
 
-# 12. Startup command
-#   --listen 0.0.0.0 => accessible via Docker
-CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]
+# 9. Writing the dynamic Entrypoint script
+RUN echo -e '#!/bin/bash\n\
+if [ ! -f "/app/venv/bin/python" ]; then\n\
+    echo "--------------------------------------------------------"\n\
+    echo "🔄 Volume /app/venv est vide (First launch)."\n\
+    echo "📦 Creating Python 3.12 virtual environment..."\n\
+    echo "--------------------------------------------------------"\n\
+    python3.12 -m venv /app/venv\n\
+    /app/venv/bin/pip install --upgrade pip uv\n\
+    \n\
+    echo "📦 Installing PyTorch optimized for CUDA 13.3..."\n\
+    /app/venv/bin/python -m uv pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130\n\
+    \n\
+    echo "📦 Installing base dependencies for ComfyUI..."\n\
+    /app/venv/bin/python -m uv pip install -r /app/comfyui/requirements.txt\n\
+else\n\
+    echo "--------------------------------------------------------"\n\
+    echo "✅ Existing virtual environment detected in the volume."\n\
+    echo "--------------------------------------------------------"\n\
+    # Optional: Ensure uv is available for future Manager fixes\n\
+    /app/venv/bin/python -m pip install --quiet uv\n\
+fi\n\
+\n\
+echo "🚀 Starting ComfyUI on port 8188..."\n\
+exec /app/venv/bin/python main.py --listen 0.0.0.0 --port 8188\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
