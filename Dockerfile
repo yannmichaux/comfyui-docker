@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libgl1 \
     libglib2.0-0 \
+    libopengl0 \
+    libegl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. Alias python3.12 -> python / pip
@@ -62,7 +64,7 @@ EXPOSE 8188
 RUN echo -e '#!/bin/bash\n\
 if [ ! -f "/app/venv/bin/python" ]; then\n\
     echo "--------------------------------------------------------"\n\
-    echo "🔄 Volume /app/venv est vide (First launch)."\n\
+    echo "🔄 Volume /app/venv is empty (First launch)."\n\
     echo "📦 Creating Python 3.12 virtual environment..."\n\
     echo "--------------------------------------------------------"\n\
     python3.12 -m venv /app/venv\n\
@@ -70,6 +72,9 @@ if [ ! -f "/app/venv/bin/python" ]; then\n\
     \n\
     echo "📦 Installing PyTorch optimized for CUDA 13.3..."\n\
     /app/venv/bin/python -m uv pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130\n\
+    \n\
+    echo "📦 Installing rembg with GPU support..."\n\
+    /app/venv/bin/python -m uv pip install "rembg[gpu]"\n\
     \n\
     echo "📦 Installing base dependencies for ComfyUI..."\n\
     /app/venv/bin/python -m uv pip install -r /app/comfyui/requirements.txt\n\
