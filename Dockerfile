@@ -5,6 +5,7 @@ SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
+    UV_LINK_MODE=copy \
     TZ=Etc/UTC
 
 # 1. Add PPA for Python (Maintenu pour la compatibilité des outils système)
