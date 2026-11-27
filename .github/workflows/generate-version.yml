@@ -1,7 +1,13 @@
-name: "Generate version based on PR label"
+name: "Generate version based on PR label or manual bump"
 
 on:
   workflow_call:
+    inputs:
+      bump:
+        description: "major | minor | patch (defaults to the PR label)"
+        required: false
+        type: string
+        default: ""
     outputs:
       version:
         description: "Generated version"
@@ -15,18 +21,27 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "lts/*"
 
-      - name: Get PR Label
+      - name: Resolve bump type (manual input or PR label)
         id: getlabel
+        env:
+          BUMP: ${{ inputs.bump }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels) }}
         run: |
-          LABEL=$(echo '${{ toJSON(github.event.pull_request.labels) }}' | jq -r '.[0].name' | tr '[:upper:]' '[:lower:]')
-          echo "label=${LABEL}" >> $GITHUB_OUTPUT
+          if [ -n "$BUMP" ]; then
+            LABEL="$BUMP"
+          else
+            LABEL=$(echo "$LABELS" | jq -r '[.[].name | ascii_downcase | select(. == "major" or . == "minor" or . == "patch")][0] // empty')
+          fi
+          LABEL=$(echo "$LABEL" | tr '[:upper:]' '[:lower:]')
+          case "$LABEL" in major|minor|patch) ;; *) echo "::error::Invalid bump type '$LABEL'"; exit 1 ;; esac
+          echo "label=${LABEL}" >> "$GITHUB_OUTPUT"
 
       - name: Bump version in package.json (no git tag)
         id: bump
@@ -38,13 +53,14 @@ jobs:
         id: setver
         run: |
           VERSION=$(jq -r .version package.json)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Write version to file
         run: echo "${{ steps.setver.outputs.version }}" > version.txt
 
       - name: Save version to GitHub cache
-        uses: actions/cache@v4
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@v6
         with:
           path: version.txt
           key: generate-version-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.ref }}-${{ github.event.pull_request.base.ref }}

@@ -1,21 +1,32 @@
-FROM nvidia/cuda:13.3.0-runtime-ubuntu26.04
+# CUDA libraries come from the PyTorch wheels (nvidia-* pip packages), so a plain
+# Ubuntu base is enough. Using nvidia/cuda:*-runtime would add ~3 GB of duplicated
+# libraries and force a host driver >= the image's CUDA version (NVIDIA_REQUIRE_CUDA).
+FROM ubuntu:26.04
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Python version used for the venv (managed by uv, independent from the system python3).
+# ComfyUI officially recommends 3.13; 3.12 is kept for custom-node compatibility.
+ARG PYTHON_VERSION=3.12
+# PyTorch wheel index (cu132 = default CUDA for PyTorch >= 2.15; cu130 stops at 2.14.1)
+ARG TORCH_INDEX=cu132
+# ComfyUI git ref (tag or branch). Use "master" for bleeding edge.
+ARG COMFYUI_REF=v0.46.3
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     UV_LINK_MODE=copy \
-    TZ=Etc/UTC
+    UV_PYTHON_INSTALL_DIR=/opt/python \
+    UV_NO_CACHE=1 \
+    TZ=Etc/UTC \
+    PYTHON_VERSION=${PYTHON_VERSION} \
+    TORCH_INDEX=${TORCH_INDEX} \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,video \
+    COMFYUI_PORT=8188
 
-# 1. Add PPA for Python (Maintenu pour la compatibilité des outils système)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa -y && \
-    apt-get update && \
-    rm -rf /var/lib/apt/lists/*
-
-# 2. Base system dependencies (Inclus les outils de compilation pour les fixs de nœuds 3D)
+# 1. Base system dependencies (build tools for 3D nodes, OpenGL/EGL, ffmpeg)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     wget \
@@ -23,10 +34,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nano \
     ca-certificates \
     build-essential \
-    python3.12 \
-    python3.12-venv \
-    python3.12-dev \
-    python3-pip \
     ffmpeg \
     libgl1 \
     libglib2.0-0 \
@@ -34,61 +41,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libegl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Alias python3.12 -> python / pip
-RUN ln -sf /usr/bin/python3.12 /usr/bin/python && \
-    ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
-    ln -sf /usr/bin/pip3 /usr/bin/pip
+# 2. uv + managed Python (no deadsnakes PPA, system python3 left untouched)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+RUN uv python install ${PYTHON_VERSION} && \
+    ln -sf "$(uv python find ${PYTHON_VERSION})" /usr/local/bin/python${PYTHON_VERSION}
 
-# 4. Application directories
+# 3. Clone ComfyUI (ComfyUI-Manager is now a pip package, see manager_requirements.txt)
 WORKDIR /app
-
-# 5. Clone ComfyUI
-RUN git clone https://github.com/Comfy-Org/ComfyUI.git comfyui
+RUN git clone --depth 1 --branch ${COMFYUI_REF} https://github.com/Comfy-Org/ComfyUI.git comfyui
 
 WORKDIR /app/comfyui
 
-# 6. Install ComfyUI-Manager
-RUN mkdir -p /app/comfyui/custom_nodes && \
-    git clone https://github.com/Comfy-Org/ComfyUI-Manager.git /app/comfyui/custom_nodes/ComfyUI-Manager
-
-# 7. Create directories for fallback/structure
+# 4. Create directories for fallback/structure
 RUN mkdir -p /app/comfyui/input \
     /app/comfyui/output \
     /app/comfyui/models \
+    /app/comfyui/custom_nodes \
     /app/comfyui/user/default
 
-# 8. Configuring environment variables and exposed port
-ENV COMFYUI_PORT=8188
 EXPOSE 8188
 
-# 9. Writing the dynamic Entrypoint script
-RUN echo -e '#!/bin/bash\n\
-if [ ! -f "/app/venv/bin/python" ]; then\n\
-    echo "--------------------------------------------------------"\n\
-    echo "🔄 Volume /app/venv is empty (First launch)."\n\
-    echo "📦 Creating Python 3.12 virtual environment..."\n\
-    echo "--------------------------------------------------------"\n\
-    python3.12 -m venv /app/venv\n\
-    /app/venv/bin/pip install --upgrade pip uv\n\
-    \n\
-    echo "📦 Installing PyTorch optimized for CUDA 13.3..."\n\
-    /app/venv/bin/python -m uv pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130\n\
-    \n\
-    echo "📦 Installing rembg with GPU support..."\n\
-    /app/venv/bin/python -m uv pip install "rembg[gpu]"\n\
-    \n\
-    echo "📦 Installing base dependencies for ComfyUI..."\n\
-    /app/venv/bin/python -m uv pip install -r /app/comfyui/requirements.txt\n\
-else\n\
-    echo "--------------------------------------------------------"\n\
-    echo "✅ Existing virtual environment detected in the volume."\n\
-    echo "--------------------------------------------------------"\n\
-    # Optional: Ensure uv is available for future Manager fixes\n\
-    /app/venv/bin/python -m pip install --quiet uv\n\
-fi\n\
-\n\
-echo "🚀 Starting ComfyUI on port 8188..."\n\
-exec /app/venv/bin/python main.py --listen 0.0.0.0 --port 8188\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# 5. Entrypoint (creates/updates the venv stored in the /app/venv volume)
+COPY --chmod=755 entrypoint.sh /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]

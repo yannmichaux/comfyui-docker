@@ -1,0 +1,43 @@
+name: Manual Release - Bump version, Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump"
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-version:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/generate-version.yml
+    with:
+      bump: ${{ inputs.bump }}
+
+  build-docker:
+    needs: generate-version
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      version: ${{ needs.generate-version.outputs.version }}
+    secrets: inherit
+
+  create-release:
+    needs: [generate-version, build-docker]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/create-release.yml
+    with:
+      version: ${{ needs.generate-version.outputs.version }}
+    secrets: inherit

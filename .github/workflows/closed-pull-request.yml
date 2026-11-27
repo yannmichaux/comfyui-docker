@@ -42,7 +42,7 @@ jobs:
 
   create-release:
     if: github.event.pull_request.merged == true
-    needs: generate-version
+    needs: [generate-version, build-docker]
     permissions:
       contents: write
     uses: ./.github/workflows/create-release.yml
